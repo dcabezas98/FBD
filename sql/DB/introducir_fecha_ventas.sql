@@ -1,0 +1,1 @@
+alter table ventas add(fecha date);
