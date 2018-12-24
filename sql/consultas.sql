@@ -24,25 +24,86 @@ select ciudad from proyecto union all select ciudad from proveedor union all sel
 
 -- 3.12) Mostrar las ternas que son de la misma ciudad pero que hayan realizado alguna venta.
 
+select proveedor.codpro, proyecto.codpj, pieza.codpie, proveedor.ciudad
+from proveedor, proyecto, pieza, ventas
+where ventas.codpro=proveedor.codpro and ventas.codpj=proyecto.codpj
+and pieza.codpie=ventas.codpie and proveedor.ciudad=proyecto.ciudad
+and proveedor.ciudad=pieza.ciudad;
+
+-- Más eficiente
+select p.codpro, p.codpj, p.codpie, p.ciudad
+from ventas,
+(select codpro, codpie, codpj, pieza.ciudad
+from proveedor, pieza, proyecto
+where pieza.ciudad=proyecto.ciudad and pieza.ciudad=proveedor.ciudad) p
+where ventas.codpj=p.codpj and ventas.codpie=p.codpie and ventas.codpro=p.codpro;
+
 -- 3.13) Encontrar parejas de proveedores que no viven en la misma ciudad.
+
+select p1.codpro, p1.ciudad, p2.codpro, p2.ciudad from proveedor p1, proveedor p2
+where p1.ciudad!=p2.ciudad;
 
 -- 3.14) Encuentra las piezas con máximo peso.
 
+select * from pieza
+minus
+select p1.* from pieza p1, pieza p2 where p1.peso < p2.peso;
+
 -- 3.15) Mostar las piezas vendidas por los proveedores de Madrid.
+
+select distinct codpie from ventas, proveedor
+where ventas.codpro=proveedor.codpro and proveedor.ciudad='Madrid';
 
 -- 3.16) Encuentra la ciudad y los códigos de las piezas suministradas a cualquier proyecto por un proveedor que está en la misma ciudad donde está el proyecto.
 
+select ciudad, codpie from
+ventas,
+(select codpj, codpro, proyecto.ciudad
+from proveedor, proyecto
+where proveedor.ciudad=proyecto.ciudad) p
+where ventas.codpj=p.codpj and ventas.codpro=p.codpro;
+
 -- 3.17) Listar las ventas ordenadas por cantidad, si algunas ventas coinciden en la cantidad se ordenan en función de la fecha de manera descendente.
+
+select * from ventas
+order by cantidad, fecha desc;
 
 -- 3.19) Mostrar las piezas vendidas por los proveedores de Madrid. (Fragmentando la consulta con la ayuda del operador IN).
 
+select distinct codpie from ventas
+where codpro in
+(select codpro from proveedor where proveedor.ciudad='Madrid');
+
 -- 3.20) Encuentra los proyectos que están en una ciudad donde se fabrica alguna pieza.
+
+select * from proyecto
+where ciudad in (select ciudad from pieza);
 
 -- 3.21) Encuentra los códigos de aquellos proyectos que no utilizan ninguna pieza roja que esté suministrada por un proveedor de Londres.
 
+-- Considerando que se la suministre el proveedor de Londres:
+select codpj from proyecto
+where codpj not in (select codpj from ventas, proveedor, pieza
+where ventas.codpro=proveedor.codpro and ventas.codpie=pieza.codpie
+and proveedor.ciudad='Londres' and pieza.color='Rojo');
+
+-- Considerando que se la suministre cualquier proveedor
+select proyecto.codpj from proyecto
+where proyecto.codpj not in (select v.codpj from ventas v
+where v.codpie in (select ventas.codpie from ventas, proveedor, pieza
+where ventas.codpro=proveedor.codpro and ventas.codpie=pieza.codpie
+and proveedor.ciudad='Londres' and pieza.color='Rojo'));
+
 -- 3.22) Muestra el código de las piezas cuyo peso es mayor que el peso de cualquier 'tornillo'.
 
+select pieza.codpie from pieza
+where pieza.peso > all (select peso from pieza
+where nompie like 'Tornillo%');
+
 -- 3.23) Encuentra las piezas con peso máximo. (Usando < | <= | > | >= ANY|ALL)
+
+select * from pieza
+where pieza.peso >= all (select peso from pieza);
 
 -- 3.24) Encontrar los códigos de las piezas suministradas a todos los proyectos localizados en Londres.
 
