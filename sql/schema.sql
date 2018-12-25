@@ -1,3 +1,5 @@
+-- Script para cargar el esquema y el contenido de la base de datos
+
 create table proveedor(
 codpro char(3) constraint codpro_no_nulo not null
 constraint codpro_clave_primaria primary key,

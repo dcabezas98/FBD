@@ -139,20 +139,58 @@ where ventas.codpie=pieza.codpie and ventas.codpro=proveedor.codpro);
 
 -- 3.26) Encontrar el número de envíos con más de 1000 unidades.
 
+select count(*) from ventas where cantidad>1000;
+
 -- 3.27) Mostrar el máximo peso.
+
+select max(peso) from pieza;
 
 -- 3.28) Mostrar el código de la pieza de máximo peso.
 
--- 3.30) Muestra los códigos de proveedores que han hecho más de envíos diferentes.
+select codpie from pieza where peso=(select max(peso) from pieza);
+
+-- 3.30) Muestra los códigos de proveedores que han hecho más de 3 envíos diferentes.
+
+select codpro from proveedor
+where (select count(*) from ventas where ventas.codpro=proveedor.codpro)>3;
 
 -- 3.31) Mostrar la media de las cantidades vendidas por cada código de pieza junto con su nombre.
 
+select ventas.codpie, pieza.nompie, avg(cantidad) from ventas, pieza
+where ventas.codpie=pieza.codpie
+group by ventas.codpie, pieza.nompie;
+
 -- 3.32) Encontrar la cantidad media de ventas de la pieza 'P1' realizadas por cada proveedor.
+
+select codpro, avg(cantidad) from ventas
+where codpie='P1'
+group by codprod;
 
 -- 3.33) Encontrar la cantidad total de cada pieza enviada a cada proyecto.
 
+select codpie, codpj, sum(cantidad) from ventas
+group by codpie, codpj;
+
 -- 3.35) Mostrar los nombres de proveedores tales que el total de sus ventas superen la cantidad de 1000 unidades.
+
+select nompro from proveedor
+where codpro in (select ventas.codpro from ventas
+group by ventas.codpro
+having sum(ventas.cantidad)>1000);
 
 -- 3.36) Mostrar para cada pieza la cantidad máxima vendida.
 
+select codpie, max(cantidad) from ventas
+group by codpie;
+
 -- 3.38) Encontrar la media de productos suministrados cada mes.
+
+-- Considerando distintos los meses de distintos años
+select to_char(fecha, 'MON-YYYY'), avg(cantidad)
+from ventas
+group by to_char(fecha, 'MON-YYYY');
+
+-- Considerando iguales los meses de distintos años
+select to_char(fecha, 'MON'), avg(cantidad)
+from ventas
+group by to_char(fecha, 'MON');
