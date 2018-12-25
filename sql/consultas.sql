@@ -107,7 +107,35 @@ where pieza.peso >= all (select peso from pieza);
 
 -- 3.24) Encontrar los códigos de las piezas suministradas a todos los proyectos localizados en Londres.
 
+select pieza.codpie from pieza
+where not exists (select * from proyecto
+where proyecto.ciudad='Londres'
+and not exists (select * from ventas
+where ventas.codpie=pieza.codpie and ventas.codpj=proyecto.codpj));
+
+select pieza.codpie from pieza
+where not exists
+(select codpj from proyecto where proyecto.ciudad='Londres'
+minus
+select codpj from ventas where ventas.codpie=pieza.codpie); 
+
 -- 3.25) Encontrar aquellos proveedores que envían piezas procedentes de todas las ciudades donde hay un proyecto.
+
+select * from proveedor
+where not exists
+(select * from proyecto
+where not exists
+(select * from ventas, pieza
+where ventas.codpie=pieza.codpie
+and ventas.codpro=proveedor.codpro
+and pieza.ciudad=proyecto.ciudad));
+
+select * from proveedor
+where not exists
+(select proyecto.ciudad from proyecto
+minus
+select pieza.ciudad from ventas, pieza
+where ventas.codpie=pieza.codpie and ventas.codpro=proveedor.codpro);
 
 -- 3.26) Encontrar el número de envíos con más de 1000 unidades.
 

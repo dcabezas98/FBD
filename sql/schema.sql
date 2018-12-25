@@ -1,5 +1,3 @@
--- Script que carga toda la base de datos con su contenido
-
 create table proveedor(
 codpro char(3) constraint codpro_no_nulo not null
 constraint codpro_clave_primaria primary key,
