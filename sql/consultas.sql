@@ -194,3 +194,162 @@ group by to_char(fecha, 'MON-YYYY');
 select to_char(fecha, 'MON'), avg(cantidad)
 from ventas
 group by to_char(fecha, 'MON');
+
+-- 3.42) Mostrar los códigos de aquellos proveedores que hayan superado las ventas totales realizadas por el proveedor 'S1'.
+
+select s.codpro from proveedor s where
+(select count(*) from ventas where ventas.codpro=s.codpro)
+> (select count(*) from ventas where ventas.codpro='S1');
+
+-- 3.43) Mostrar los mejores proveedores, entendiéndose como los que tienen mayores cantidades totales.
+
+select proveedor.* from proveedor
+where codpro in (select codpro from ventas group by codpro
+having sum(cantidad) >= all
+(select sum(cantidad) from ventas group by codpro));
+
+-- 3.44) Mostrar los proveedores que venden piezas a todas las ciudades de los proyectos a los que suministra 'S3', sin incluirlo.
+
+-- Entiendo que vender una pieza a una ciudad es vender la pieza a un proyecto de la ciudad.
+
+select * from proveedor where codpro!='S3' and codpro in(
+select distinct codpro from ventas v2
+where not exists (
+select j.ciudad from proyecto j natural join ventas v where v.codpro='S3'
+and not exists (
+select * from ventas v1 natural join proyecto j1 where v2.codpro=v1.codpro and j1.ciudad=j.ciudad)));
+
+-- 3.45) Encontrar aquellos proveedores que hayan hecho al menos diez pedidos.
+
+select * from proveedor where codpro in
+(select codpro from ventas group by codpro having count(*)>=10);
+
+-- 3.46) Encontrar aquellos proveedores que venden todas las piezas suministradas por S1.
+
+select * from proveedor where
+not exists(
+select v1.codpie from ventas v1 where v1.codpro='S1'
+minus
+select v2.codpie from ventas v2 where v2.codpro=proveedor.codpro);
+
+-- 3.47) Encontrar la cantidad total de piezas que ha vendido cada proveedor que cumple la condición de vender todas las piezas suministradas por S1.
+
+select t.codpro, sum(cantidad) from 
+(select * from proveedor where
+not exists(
+select v1.codpie from ventas v1 where v1.codpro='S1'
+minus
+select v2.codpie from ventas v2 where v2.codpro=proveedor.codpro)) t
+natural join ventas group by t.codpro;
+
+-- 3.48) Encontrar qué proyectos están suministrados por todos los proveedores que suministran la pieza P3.
+
+select * from proyecto
+where not exists(
+select v.codpro from ventas v where v.codpie='P3'
+minus
+select v1.codpro from ventas v1 where v1.codpj=proyecto.codpj);
+
+-- 3.49) Encontrar la cantidad media de piezas suministrada a aquellos proveedores que venden la pieza P3.
+
+-- Cantidad media por cada proveedor que vende P3
+
+select t.codpro, avg(cantidad)
+from (select v.codpro from ventas v where v.codpie='P3') t, ventas v1
+where t.codpro=v1.codpro
+group by t.codpro;
+
+-- Cantidad media de todos los proveedores que venden P3
+
+select avg(cantidad)
+from (select v.codpro from ventas v where v.codpie='P3') t, ventas v1
+where t.codpro=v1.codpro;
+
+-- 3.50) Nombres de los índices y sobre que tablas están montados, además de su propietario.
+
+select index_name, table_name, owner from all_indexes;
+
+-- 3.52) Mostrar para cada proveedor la media de productos suministrados cada año.
+
+-- Media por proveedor y año
+select codpro, to_char(fecha, 'yyyy'), avg(cantidad) from ventas
+group by codpro, to_char(fecha, 'yyyy');
+
+-- Media por proveedor de cantidad de piezas que vende cada año (que halla vendido al menos una)
+
+create or replace view CantidadProveedorAnio(codpro, anio, cantidad) as
+select codpro, to_char(fecha, 'yyyy'), sum(cantidad) from ventas
+group by codpro, to_char(fecha, 'yyyy');
+
+select codpro, avg(cantidad) from cantidadproveedoranio
+group by codpro;
+
+-- 3.53) Encontrar todos los proveedores que venden una pieza roja.
+select * from proveedor
+where codpro in
+(select codpro from ventas natural join pieza where color='Rojo');
+
+-- 3.54) Encontrar todos los proveedores que venden todas las piezas rojas.
+
+select * from proveedor where codpro in
+(select s.codpro from proveedor s
+where not exists (
+select codpie from pieza where color='Rojo'
+minus
+select codpie from ventas where ventas.codpro=s.codpro));
+ 
+-- 3.55) Encontrar todos los proveedores tales que todas las piezas que venden son rojas.
+
+select * from proveedor where codpro in
+(select codpro from proveedor
+minus
+select codpro from ventas natural join pieza where pieza.color!='Rojo');
+
+-- 3.56) Encontrar el nombre de aquellos proveedores que venden más de una pieza roja.
+
+-- Entiendo que deben vender dos o más piezas rojas distintas.
+
+select codpro from ventas, pieza
+where ventas.codpie=pieza.codpie and color='Rojo'
+group by codpro
+having count(distinct pieza.codpie)>1;
+
+-- 3.57) Encontrar todos los proveedores que vendiendo todas las piezas rojas cumplen la condición de que todas sus ventas son de más de 10 unidades.
+
+select * from proveedor where codpro in (
+(select s.codpro from proveedor s
+where not exists (
+select codpie from pieza where color='Rojo'
+minus
+select codpie from ventas where ventas.codpro=s.codpro))
+intersect
+(select s1.codpro from proveedor s1
+where not exists
+(select * from ventas where ventas.codpro=proveedor.codpro
+and cantidad<=10))
+);
+
+-- 3.58) Coloca el status igual a 1 a aquellos proveedores que sólo suministran la pieza P1.
+
+update proveedor
+set status=1 where codpro in(
+select codpro from ventas v
+where not exists
+(select * from ventas v1 where v1.codpro=v.codpro and v1.codpie!='P1'));
+
+-- 3.59) Encuentra, de entre las piezas que no se han vendido en septiembre de 2009, las ciudades de aquellas que se han vendido en mayor cantidad durante Agosto de ese mismo año.
+
+create or replace view PieNoSept2009 as select * from pieza where codpie in
+(select codpie from pieza
+minus
+select codpie from ventas where to_char(fecha,'mm-yyyy')='09-2009');
+
+create or replace view VentasAgos2009 as select * from ventas
+where to_char(fecha,'mm-yyyy')='08-2009';
+
+select ciudad from PieNoSept2009 p, VentasAgos2009 v
+where p.codpie=v.codpie
+group by p.codpie, ciudad
+having sum(cantidad)=(select max(sum(cantidad)) from VentasAgos2009
+where codpie in (select codpie from PieNoSept2009)
+group by codpie);
