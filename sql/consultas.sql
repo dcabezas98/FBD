@@ -353,3 +353,40 @@ group by p.codpie, ciudad
 having sum(cantidad)=(select max(sum(cantidad)) from VentasAgos2009
 where codpie in (select codpie from PieNoSept2009)
 group by codpie);
+
+-- Encontrar los proveedores que han hecho un mayor número de ventas a
+-- proyectos que forman parte de la lista de proyectos que usan piezas
+-- de todas las ciudades.
+
+create or replace view ProyectosQueUsanPiezasDeTodasLasCiudades as
+select * from proyecto j
+where not exists(
+select ciudad from pieza
+minus
+select p.ciudad from pieza p natural join ventas v where v.codpj=j.codpj);
+
+create or replace view Proveedores1 as
+select * from proveedor where codpro in
+(select v.codpro from ventas v
+where v.codpj in
+(select codpj from ProyectosQueUsanPiezasDeTodasLasCiudades)
+group by v.codpro
+having count(*) >= all (select count(*) from ventas v1
+where v1.codpj in
+(select codpj from ProyectosQueUsanPiezasDeTodasLasCiudades)
+group by v1.codpro);
+
+-- Ahora encontrar los proveedores que han hecho el mayor y el segundo
+-- mayor número de ventas a proyectos que forman parte de la lista de
+-- proyectos que usan piezas de todas las ciudades.
+
+select * from proveedor where codpro in
+(select v.codpro from ventas v
+where v.codpj in
+(select codpj from ProyectosQueUsanPiezasDeTodasLasCiudades)
+group by v.codpro
+having count(*) >= all (select count(*) from ventas v1
+where v1.codpj in 
+(select codpj from ProyectosQueUsanPiezasDeTodasLasCiudades)
+and v1.codpro not in (select codpro from Proveedores1)
+group by v1.codpro);
