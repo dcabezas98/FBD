@@ -255,7 +255,7 @@ select v1.codpro from ventas v1 where v1.codpj=proyecto.codpj);
 -- Cantidad media por cada proveedor que vende P3
 
 select t.codpro, avg(cantidad)
-from (select v.codpro from ventas v where v.codpie='P3') t, ventas v1
+from (select distinct v.codpro from ventas v where v.codpie='P3') t, ventas v1
 where t.codpro=v1.codpro
 group by t.codpro;
 
